@@ -1,10 +1,12 @@
 #include "external/raylib/include/raylib.h"
 #include <stdio.h>
+#include <stdint.h>
+#include <string.h>
 #include "src/chip_8.h"
 #include "src/timer.h"
+#include "src/debug.h"
 
 #define SCALE 13
-#define REFRESH 500
 
 int isChip8KeyDown()
 {
@@ -47,66 +49,131 @@ int isChip8KeyDown()
     return -1;
 }
 
-void draw(Color background, Color pixel, unsigned char buffer[][32])
+void drawBuffer(Color background, Color pixel, uint8_t buffer[][32])
 {
-    BeginDrawing();
-    ClearBackground(background);
     for (int i = 0; i < 64; i++)
     {
         for (int j = 0; j < 32; j++)
         {
-            DrawRectangle(i * SCALE, j * SCALE, SCALE, SCALE, buffer[i][j] ? pixel : background);
+            DrawRectangle(memArea + i * SCALE, regsArea + j * SCALE, SCALE, SCALE, buffer[i][j] ? pixel : background);
         }
     }
-    EndDrawing();
+}
+
+Wave GenerateBeepWave(float frequency, float duration, int sampleRate)
+{
+    int sampleCount = (int)(sampleRate * duration);
+    short *data = (short *)MemAlloc(sampleCount * sizeof(short));
+
+    for (int i = 0; i < sampleCount; i++)
+    {
+        float t = (float)i / sampleRate;
+        data[i] = (short)(32000 * sinf(2 * PI * frequency * t));
+    }
+
+    Wave wave = {
+        .frameCount = sampleCount,
+        .sampleRate = sampleRate,
+        .sampleSize = 16,
+        .channels = 1,
+        .data = data};
+
+    return wave;
 }
 
 int main(int argc, char *argv[])
 {
-    if (argc == 1 || argc > 2)
+    if (argc == 1 || argc > 4)
     {
         printf("Required:\n");
         printf("  * ROM\n");
+        printf("  * (optional) -d\n");
+        printf("  * CPU steps per sec\n");
         return 1;
     }
-    const int width = 64 * SCALE;
-    const int height = 32 * SCALE;
+
+    char *romPath = argv[1];
+    int debug = argc >= 3;
+    int cpuSteps = argc == 4 ? atoi(argv[3]) : 700;
+
+    if (debug)
+    {
+        // this probably is not good as these
+        // are defined in a separate file...
+        memArea = 350;
+        regsArea = 300;
+    }
+    const int width = memArea + 64 * SCALE;
+    const int height = regsArea + 32 * SCALE;
 
     InitWindow(width, height, "chip 8 emulator");
-    SetWindowMonitor(1);
-    SetTargetFPS(60);
+    InitAudioDevice();
 
-    int size = GetFileLength(argv[1]);
+    Wave wave = GenerateBeepWave(440.0f, 0.5f, 44100);
+    Sound sound = LoadSoundFromWave(wave);
+
+    int size = GetFileLength(romPath);
+    unsigned char *program = LoadFileData(romPath, &size);
 
     Cpu cpu;
     CpuInit(&cpu, isChip8KeyDown);
-    load(&cpu, LoadFileData(argv[1], &size), size);
+    load(&cpu, program, size);
 
-    Args args;
-    args.cpu = &cpu;
-    args.tick = tick;
-    startTimerThread(&args);
-
-    int count = 0;
+    int inst = -1;
+    float acc1 = 0;
+    float acc2 = 0;
+    const float dtCpuSteps = 1.0f / cpuSteps;
     while (!WindowShouldClose())
     {
-        switch (step(&cpu))
+        int action = 0;
+        if (debug)
+            debugControls(&cpu, cpuSteps, program, size);
+        else
         {
-        case 1:
-            draw(RAYWHITE, BLUE, cpu.v);
-            break;
-        default:
-            // this is just to keep the window responsive
-            count++;
-            if (count == REFRESH)
+            float dt = GetFrameTime();
+            acc2 += dt;
+            while (acc2 >= DT_TIMER_REFRESH)
             {
-                draw(RAYWHITE, BLUE, cpu.v);
-                count = 0;
+                tick(&cpu);
+                acc2 -= DT_TIMER_REFRESH;
             }
-            break;
+
+            acc1 += dt;
+            while (acc1 >= dtCpuSteps)
+            {
+                action = step(&cpu);
+                acc1 -= dtCpuSteps;
+            }
         }
+
+        if (IsKeyPressed(KEY_KP_0))
+        {
+            cpuReset(&cpu);
+            load(&cpu, program, size);
+            acc1 = 0;
+            acc2 = 0;
+        }
+
+        if (doBeep(&cpu))
+            PlaySound(sound);
+        else
+            StopSound(sound);
+
+        BeginDrawing();
+
+        ClearBackground(DARKGRAY);
+
+        if (debug)
+            drawDebug(&cpu);
+
+        drawBuffer(DARKGRAY, GOLD, cpu.v);
+        // we need this drawing loop here as EndDrawing calls the input polling
+        EndDrawing();
     }
 
+    UnloadSound(sound);
+    UnloadWave(wave);
+    CloseAudioDevice();
     CloseWindow();
 
     return 0;
