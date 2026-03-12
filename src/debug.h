@@ -3,8 +3,8 @@
 
 #include <stdint.h>
 #include <math.h>
+#include <raylib.h>
 #include "chip_8.h"
-#include "../external/raylib/include/raylib.h"
 
 extern int regsArea;
 extern int memArea;

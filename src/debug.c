@@ -1,14 +1,12 @@
 #include "debug.h"
 
-int regsArea = 0;
-int memArea = 0;
+int regsArea = 300;
+int memArea = 350;
 int scroll = 0;
 
 const char *instString(uint16_t inst)
 {
     int instl1 = (inst & 0xF000) >> 12;
-    int instl2 = (inst & 0x0F00) >> 8;
-    int insth3 = (inst & 0x00F0) >> 4;
     int insth4 = inst & 0x000F;
     int b2 = inst & 0xFF;
 
@@ -195,7 +193,7 @@ int debugControls(Cpu *cpu, int cpuSteps, unsigned char *insts, int size)
     if (wheel == -1)
         scroll++;
 
-    if (IsKeyPressed(KEY_DOWN) || IsKeyDown(KEY_RIGHT))
+    if (IsKeyPressed(KEY_RIGHT) || IsKeyDown(KEY_DOWN))
     {
         if (cpu->dt > 0 || cpu->st > 0)
         {

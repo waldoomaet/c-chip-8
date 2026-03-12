@@ -138,7 +138,7 @@ int decode(Cpu *cpu, uint16_t inst)
             {
                 int result = cpu->gp[instl2] | cpu->gp[insth3];
                 cpu->gp[instl2] = (uint8_t)result;
-                cpu->gp[0xf] = 0;
+                // cpu->gp[0xf] = 0;
                 break;
             }
         case 2:
@@ -300,7 +300,7 @@ int decode(Cpu *cpu, uint16_t inst)
             break;
         case 0x29:
             // fx29 - load font x in i
-            cpu->i = FONT_START + cpu->gp[instl2];
+            cpu->i = FONT_START + cpu->gp[instl2] * 5;
             break;
         case 0x33:
             // fx33 - bcd
