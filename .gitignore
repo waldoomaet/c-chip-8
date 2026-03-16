@@ -57,7 +57,4 @@ dkms.conf
 /roms
 .vscode
 out.txt
-*.html
-*.js
-*.wasm
 chip_8
