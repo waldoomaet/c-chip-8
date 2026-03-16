@@ -1,5 +1,7 @@
 # CHIP8 Emulator
 
+**_NOTE:_**  Try it out [here](https://waldoomaet.github.io/c-chip-8/chip_8.html)! (Read [limitations](#limitations) for limits on the web build)
+
 Mostly compliant CHIP8 emulator/debug tools written in C. Followed the [this guide](https://tobiasvl.github.io/blog/write-a-chip-8-emulator/). 
 
 Roms can be found in these repos:
@@ -78,7 +80,5 @@ Both the native and web builds share the following controls:
 - As the web build just came as an afterthought it can only play a hardcoded pong rom.\
 
 - The debug mode in the web build works, but it's slow. 
-
-- There's no sound in the web build
 
 - The displaying on canvas could also be improved for normal execution.
