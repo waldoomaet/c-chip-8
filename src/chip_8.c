@@ -138,7 +138,7 @@ int decode(Cpu *cpu, uint16_t inst)
             {
                 int result = cpu->gp[instl2] | cpu->gp[insth3];
                 cpu->gp[instl2] = (uint8_t)result;
-                // cpu->gp[0xf] = 0;
+                cpu->gp[0xf] = 0;
                 break;
             }
         case 2:
@@ -146,7 +146,7 @@ int decode(Cpu *cpu, uint16_t inst)
             {
                 int result = cpu->gp[instl2] & cpu->gp[insth3];
                 cpu->gp[instl2] = (uint8_t)result;
-                // cpu->gp[0xf] = result > 0xff;
+                cpu->gp[0xf] = 0;
                 break;
             }
         case 3:
@@ -154,7 +154,7 @@ int decode(Cpu *cpu, uint16_t inst)
             {
                 int result = cpu->gp[instl2] ^ cpu->gp[insth3];
                 cpu->gp[instl2] = (uint8_t)result;
-                // cpu->gp[0xf] = result > 0xff;
+                cpu->gp[0xf] = 0;
                 break;
             }
         case 4:
@@ -256,6 +256,7 @@ int decode(Cpu *cpu, uint16_t inst)
         break;
     }
     case 0xe:
+    {
         int key = cpu->keyDown();
         // ex9e - skip if pressed
         if ((uint8_t)inst == 0x9e)
@@ -270,6 +271,7 @@ int decode(Cpu *cpu, uint16_t inst)
                 cpu->pc += 2;
         }
         break;
+    }
     case 0xf:
         switch ((uint8_t)inst)
         {
@@ -291,31 +293,36 @@ int decode(Cpu *cpu, uint16_t inst)
             break;
         case 0xa:
             // fx0a - get key
-            int key = cpu->keyDown();
-            // this effectively works as while(key < 0) {}
-            if (key < 0)
-                cpu->pc -= 2;
-            else
-                cpu->gp[instl2] = key;
-            break;
+            {
+                int key = cpu->keyDown();
+                // this effectively works as while(key < 0) {}
+                if (key < 0)
+                    cpu->pc -= 2;
+                else
+                    cpu->gp[instl2] = key;
+                break;
+            }
         case 0x29:
             // fx29 - load font x in i
             cpu->i = FONT_START + cpu->gp[instl2] * 5;
             break;
         case 0x33:
             // fx33 - bcd
-            int num = cpu->gp[instl2];
-            for (int i = 2; i > -1; i--)
             {
-                cpu->m[cpu->i + i] = num % 10;
-                num /= 10;
+                int num = cpu->gp[instl2];
+                for (int i = 2; i > -1; i--)
+                {
+                    cpu->m[cpu->i + i] = num % 10;
+                    num /= 10;
+                }
+                break;
             }
-            break;
         case 0x55:
             // fx55 - move memory to regs until x
             for (int i = 0; i <= instl2; i++)
             {
-                cpu->m[cpu->i + i] = cpu->gp[i];
+                cpu->m[cpu->i] = cpu->gp[i];
+                cpu->i++;
             }
 
             break;
@@ -323,7 +330,8 @@ int decode(Cpu *cpu, uint16_t inst)
             // fx55 - move regs to memory until x
             for (int i = 0; i <= instl2; i++)
             {
-                cpu->gp[i] = cpu->m[cpu->i + i];
+                cpu->gp[i] = cpu->m[cpu->i];
+                cpu->i++;
             }
             break;
         default:

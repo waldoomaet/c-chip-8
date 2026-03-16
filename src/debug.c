@@ -1,8 +1,20 @@
 #include "debug.h"
 
-int regsArea = 300;
-int memArea = 350;
+int regsArea = 0;
+int memArea = 0;
 int scroll = 0;
+
+void enableDebug()
+{
+    regsArea = REGS_ARES;
+    memArea = MEM_AREA;
+}
+
+void disableDebug()
+{
+    regsArea = 0;
+    memArea = 0;
+}
 
 const char *instString(uint16_t inst)
 {
