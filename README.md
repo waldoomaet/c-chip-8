@@ -77,7 +77,7 @@ Both the native and web builds share the following controls:
 
 - The emulator only implements the quirks of the base CHIP8 (so no SUPER-CHIP or XO-CHIP support)
 
-- As the web build just came as an afterthought it can only play a hardcoded pong rom.\
+- As the web build just came as an afterthought it can only play a hardcoded pong rom. Also, no sound
 
 - The debug mode in the web build works, but it's slow. 
 
